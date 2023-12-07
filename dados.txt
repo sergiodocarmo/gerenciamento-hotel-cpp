@@ -1,0 +1,8 @@
+Quarto  101 6
+Quarto  6 66
+Quarto  1 2
+Cliente  V 123
+Cliente  jona c;
+Reserva V 101 20 30
+Reserva jona 6 20 30
+Reserva V 1 20 30

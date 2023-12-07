@@ -1,6 +1,9 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
+#include <map>
+#include <sstream>
 
 class Pessoa {
 public:
@@ -59,6 +62,19 @@ private:
 class SistemaReservasHotel {
 public:
 
+    ~SistemaReservasHotel() {
+        // Limpar a memória alocada dinamicamente
+        for (auto quarto : quartos) {
+            delete quarto;
+        }
+        for (auto cliente : clientes) {
+            delete cliente;
+        }
+        for (auto reserva : reservas) {
+            delete reserva;
+        }
+    }
+
     void adicionarQuarto(int numero, int capacidade) {
         quartos.push_back(new Quarto(numero, capacidade));
     }
@@ -71,11 +87,10 @@ public:
 
     void realizarReserva(Cliente* cliente, Quarto* quarto, const std::string& dataInicio, const std::string& dataFim) {
         if (quarto->estaReservado()) {
-            std::cout << "Quarto já reservado.\n";
+            std::cout << "Quarto ja reservado.\n";
         } else {
             quarto->reservar();
             reservas.push_back(new Reserva(cliente, quarto, dataInicio, dataFim));
-            std::cout << "Reserva realizada com sucesso.\n";
         }
     }
 
@@ -88,26 +103,124 @@ public:
         }
     }
 
-    const std::vector<Quarto*>& getQuartos() const {
-        return quartos;
+    void mostrarQuartos() const {
+    std::cout << "\nLista de Quartos:\n";
+    for (const auto& quarto : quartos) {
+        std::cout << "Numero: " << quarto->getNumero() << ", Capacidade: " << quarto->getCapacidade();
+        if (quarto->estaReservado()) {
+            std::cout << " (Reservado)";
+        }
+        std::cout << "\n";
+    }
+}
+
+void mostrarClientes() const {
+    std::cout << "\nLista de Clientes:\n";
+    for (const auto& cliente : clientes) {
+        std::cout << "Nome: " << cliente->getNome() << ", Telefone: " << cliente->getTelefone() << "\n";
+    }
+}
+
+    const std::vector<Quarto*>& getQuartos() const { return quartos; }
+
+    const std::vector<Cliente*>& getClientes() const { return clientes; }
+
+    const std::vector<Reserva*>& getReservas() const { return reservas; }
+
+    // Método para salvar os dados em um arquivo
+    void salvarDados(const std::string& nomeArquivo) {
+
+            std::cout << "Salvando arquivo... \n";
+
+        std::ofstream arquivo(nomeArquivo);
+
+        // Salvar dados dos quartos
+        for (const auto& quarto : quartos) {
+            arquivo << "Quarto " << " " << quarto->getNumero() << " " << quarto->getCapacidade() << "\n";
+        }
+
+        // Salvar dados dos clientes
+        for (const auto& cliente : clientes) {
+            arquivo << "Cliente " << " " << cliente->getNome() << " " << cliente->getTelefone() << "\n";
+        }
+
+        // Salvar dados das reservas
+        for (const auto& reserva : reservas) {
+            arquivo << "Reserva " << reserva->getCliente()->getNome() << " " << reserva->getQuarto()->getNumero()
+                    << " " << reserva->getDataInicio() << " " << reserva->getDataFim() << "\n";
+        }
     }
 
-    const std::vector<Cliente*>& getClientes() const {
-        return clientes;
-    }
+    void carregarDados(const std::string& nomeArquivo) {
+        std::ifstream arquivo(nomeArquivo);
+        std::string linha;
 
-    const std::vector<Reserva*>& getReserva() const {
-        return reservas;
+        std::cout << "\nLendo arquivo...\n";
+
+        while (std::getline(arquivo, linha)) {
+
+            std::istringstream stream(linha);
+            std::string tipo;
+
+            // Lê o tipo (Quarto, Cliente, Reserva)
+            stream >> tipo;
+
+            if (tipo == "Quarto") {
+
+                int numero, capacidade;
+                stream >> numero >> capacidade;
+                adicionarQuarto(numero, capacidade);
+
+            } else if (tipo == "Cliente") {
+
+                std::string nome, telefone;
+                stream >> nome >> telefone;
+                adicionarCliente(nome, telefone);
+
+            } else if (tipo == "Reserva") {
+
+                std::string nomeCliente, dataInicio, dataFim;
+                int numeroQuarto;
+                stream >> nomeCliente >> numeroQuarto >> dataInicio >> dataFim;
+
+                Cliente* cliente = encontrarCliente(nomeCliente);
+                Quarto* quarto = encontrarQuarto(numeroQuarto);
+                
+                if (cliente && quarto) {
+                    this->realizarReserva(cliente, quarto, dataInicio, dataFim);
+                }
+            }
+        }
     }
 
 private:
     std::vector<Quarto*> quartos;
     std::vector<Cliente*> clientes;
     std::vector<Reserva*> reservas;
+
+    Cliente* encontrarCliente(const std::string& nome) {
+        for (const auto& cliente : clientes) {
+            if (cliente->getNome() == nome) {
+                return cliente;
+            }
+        }
+        return nullptr;
+    }
+
+    Quarto* encontrarQuarto(int numero) {
+        for (const auto& quarto : quartos) {
+            if (quarto->getNumero() == numero) {
+                return quarto;
+            }
+        }
+        return nullptr;
+    }
 };
 
 int main() {
     SistemaReservasHotel sistema;
+
+    sistema.carregarDados("dados.txt");
 
     int escolha;
     do {
@@ -115,7 +228,9 @@ int main() {
                   << "1. Adicionar Quarto\n"
                   << "2. Adicionar Cliente\n"
                   << "3. Realizar Reserva\n"
-                  << "4. Mostrar Reservas\n"
+                  << "4. Mostrar Quartos\n"
+                  << "5. Mostrar Clientes\n"
+                  << "6. Mostrar Reservas\n"
                   << "0. Sair\n"
                   << "Opcao: ";
         std::cin >> escolha;
@@ -159,8 +274,6 @@ int main() {
 
                 if (!cliente) {
                     std::cout << "Cliente nao encontrado.\n";
-                    std::cout << "Gostaria de cadastrar um novo cliente? Digite a opcao [Sim = 1 | Nao = 2]";
-                    std::cin >> escolha;
                     break;
                 }
 
@@ -185,13 +298,21 @@ int main() {
                 }
 
                 sistema.realizarReserva(cliente, quarto, dataInicio, dataFim);
+                std::cout << "Reserva realizada com sucesso.\n";
                 break;
             }
             case 4:
-            if (sistema.getReserva().size() < 1){
-                std::cout << "Nao ha reservas cadastradas.\n";
-            }
-                sistema.mostrarReservas();
+                sistema.mostrarQuartos();
+                break;
+            case 5:
+                sistema.mostrarClientes();
+                break;
+            case 6:
+                if (sistema.getReservas().empty()) {
+                    std::cout << "Não há reservas cadastradas.\n";
+                } else {
+                    sistema.mostrarReservas();
+                }
                 break;
             case 0:
                 std::cout << "Saindo do programa.\n";
@@ -201,6 +322,8 @@ int main() {
         }
 
     } while (escolha != 0);
+
+    sistema.salvarDados("dados.txt");
 
     return 0;
 }
