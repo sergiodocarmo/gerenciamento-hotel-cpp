@@ -1,4 +1,4 @@
-#include "Quarto.hpp"
+#include "../header/Quarto.hpp"
 
 Quarto::Quarto(int numero, int capacidade) : numero(numero), capacidade(capacidade), reservado(false) {}
 

@@ -1,4 +1,4 @@
-#include "Sistema.hpp"
+#include "../header/Sistema.hpp"
 
 Sistema::~Sistema()
 {

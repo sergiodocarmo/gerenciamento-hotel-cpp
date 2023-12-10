@@ -1,4 +1,4 @@
-#include "Pessoa.hpp"
+#include "../header/Pessoa.hpp"
 
 Pessoa::Pessoa(const std::string& nome) : nome(nome) {}
 
